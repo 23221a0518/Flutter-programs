@@ -1,13 +1,4 @@
-5B) Implement state management using set State and Provider.
-AIM: To Implement state management using set State and Provider.
-DESCRIPTION:
-Set State:
-Used to manage simple and local states inside a single widget. It updates the UI whenever the 
-state changes. Example: changing a counter value or showing/hiding a widget.
-Provider:
-Used to manage and share state across different widgets in the app. It helps keep the code 
-clean and organized, especially for larger projects. Example: managing user login or app theme.
-PROGRAM:
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 void main() {
