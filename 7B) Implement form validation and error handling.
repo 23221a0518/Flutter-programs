@@ -1,14 +1,4 @@
-7B) Implement form validation and error handling. 
-AIM:To implement form validation and error handling 
-DESCRIPTION: 
->Form validation is used to check user input before submission. 
->It ensures that all required fields are filled correctly and prevents errors. 
->In this program, validation checks whether the name and email fields are empty or 
-invalid. 
->If an error occurs, a message is shown below the input field. 
->When all inputs are valid, a success message is displayed using a SnackBar. 
->This improves app reliability and provides a better user experience. 
-PROGRAM:
+
 import 'package:flutter/material.dart';
 void main() {
 runApp(const MyApp());
