@@ -1,9 +1,4 @@
-AIM:To display the fetched data in a meaningful way in the UI. 
-DESCRIPTION:
-• Present data in widgets like ListView or Card.
-• Format and style data for readability.
-• Update UI dynamically based on fetched results.
-PROGRAM:
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
