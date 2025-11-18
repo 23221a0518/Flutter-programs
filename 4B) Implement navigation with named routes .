@@ -1,15 +1,4 @@
-AIM: Implement navigation with named routes
-DESCRIPTION:
-Navigation is essential for moving between different pages (screens) in mobile apps. Flutter uses 
-a Navigator widget that manages a navigation stack.
-Named Routes allow navigation using route names (strings) instead of writing navigation logic 
-repeatedly on each screen.
-Why Named Routes?
-✔ Code becomes cleaner and more organized
-✔ All routes are managed in a single location
-✔ Supports large applications with many screens
-✔ Easier to pass data between screens
-PROGRAM:
+
 import 'package:flutter/material.dart';
 void main() => runApp(MyApp());
 class MyApp extends StatelessWidget {
