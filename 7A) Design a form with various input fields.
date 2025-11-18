@@ -1,13 +1,4 @@
-7A) Design a form with various input fields. 
-AIM:To design a form with various input fields. 
-DESCRIPTION: 
->A form is used to collect information from the user. 
->It contains various input fields such as name, email, password, and age. 
->The user enters data into these fields and submits it using a button. 
->Forms are commonly used in applications and websites for login, registration, or feedback 
-purposes. 
->The design of the form should be simple, clear, and easy to use. 
-PROGRAM:
+
 import 'package:flutter/material.dart';
 void main() {
 runApp(const MyApp());
