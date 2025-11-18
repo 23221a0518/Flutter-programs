@@ -1,0 +1,49 @@
+AIM:To write unit tests for UI components 
+DESCRIPTION: 
+• Use Flutter’s flutter_test package to write test cases.
+• Test widget behavior using WidgetTester.
+• Verify that UI renders and functions correctly.
+PROGRAM:
+import 'package:flutter/material.dart';
+void main() {
+runApp(const MyApp());
+}
+class MyApp extends StatelessWidget {
+const MyApp({super.key});
+@override
+Widget build(BuildContext context) {
+return const MaterialApp(
+title: 'Counter App',
+home: CounterScreen(),
+);
+}
+}
+class CounterScreen extends StatefulWidget {
+const CounterScreen({super.key});
+@override
+State<CounterScreen> createState() => _CounterScreenState();
+}
+class _CounterScreenState extends State<CounterScreen> {
+int count = 0;
+void increment() {
+setState(() {
+count++;
+});
+}
+@override
+Widget build(BuildContext context) {
+return Scaffold(
+appBar: AppBar(title: const Text('Counter Example')),
+body: Center(
+child: Text(
+'Count: $count',
+style: const TextStyle(fontSize: 25),
+),
+),
+floatingActionButton: FloatingActionButton(
+onPressed: increment,
+child: const Icon(Icons.add),
+),
+);
+}
+}
