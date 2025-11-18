@@ -1,16 +1,4 @@
-AIM: Set up navigation between different screens using navigator
-DESCRIPTION:
-Navigation is a fundamental part of mobile app development where users move from one 
-screen (page) to another. Flutter provides a built-in Navigator widget that manages a stack￾based navigation system.
-• When a new screen is opened, it is pushed onto the stack.
-• When returning to the previous screen, it is popped from the stack.
-Flutter supports two types of navigation:
-1. Navigator.push() / Navigator.pop() — Direct stack-based navigation
-2. Named Routes — Structured navigation using route names (for better scalability)
-In this experiment, we create multiple screens and navigate between them using buttons. We 
-also explore how screens are added and removed from the navigation stack to maintain the 
-correct flow of the app.
-PROGRAM:
+
 import 'package:flutter/material.dart';
 void main() {
  runApp(MyApp());
