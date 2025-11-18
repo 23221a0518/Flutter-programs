@@ -1,11 +1,4 @@
-6B) Apply styling using themes and custom styles.
-AIM: To Apply styling using themes and custom styles.
-DESCRIPTION:
-In this project, themes and custom styles were used to give the app a consistent and attractive 
-look. Colors, fonts, and text styles were defined in a theme to make the UI uniform across all 
-screens. Custom styles were also applied to specific widgets to match the app’s design and 
-improve user experience.
-PROGRAM:
+
 import 'package:flutter/material.dart';
 void main() {
 runApp(const MyApp());
