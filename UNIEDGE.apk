@@ -1,0 +1,1947 @@
+// lib/main.dart
+import 'package:flutter/material.dart';
+import 'dart:async';
+
+// Simple in-memory user store
+class User {
+  final String name;
+  final String username;
+  final String email;
+  final String phone;
+  final String password;
+  User({
+    required this.name,
+    required this.username,
+    required this.email,
+    required this.phone,
+    required this.password,
+  });
+}
+
+void main() {
+  runApp(UniEdgeApp());
+}
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+// --- APP STATE MANAGEMENT ---
+class AppState extends ChangeNotifier {
+  ThemeMode _themeMode = ThemeMode.light;
+  User? _currentUser;
+  final CartModel cart = CartModel();
+
+  ThemeMode get themeMode => _themeMode;
+  User? get currentUser => _currentUser;
+
+  void toggleTheme() {
+    _themeMode = _themeMode == ThemeMode.light
+        ? ThemeMode.dark
+        : ThemeMode.light;
+    notifyListeners();
+  }
+
+  void setCurrentUser(User? user) {
+    _currentUser = user;
+    notifyListeners();
+  }
+}
+
+class UniEdgeApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<AppState>(
+      create: () => AppState(),
+      child: Consumer<AppState>(
+        builder: (context, appState, _) {
+          return MaterialApp(
+            title: 'UniEdge',
+            debugShowCheckedModeBanner: false,
+            themeMode: appState.themeMode,
+            theme: ThemeData(
+              primarySwatch: Colors.deepPurple,
+              brightness: Brightness.light,
+              scaffoldBackgroundColor: Colors.grey[50],
+              appBarTheme: AppBarTheme(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black87,
+                elevation: 0,
+                titleTextStyle: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: Colors.deepPurple,
+                ),
+              ),
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              primarySwatch: Colors.deepPurple,
+              scaffoldBackgroundColor: Colors.black,
+              appBarTheme: AppBarTheme(
+                backgroundColor: Colors.grey[900],
+                foregroundColor: Colors.white,
+              ),
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple.shade700,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
+            home: SplashScreen(
+              onFinish: () {
+                final state = ChangeNotifierProvider.of<AppState>(
+                  navigatorKey.currentContext!,
+                );
+                Navigator.of(navigatorKey.currentContext!).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (_) => AuthWrapper(appState: state),
+                  ),
+                );
+              },
+            ),
+            navigatorKey: navigatorKey,
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ---------------------------- SPLASH ----------------------------
+class SplashScreen extends StatefulWidget {
+  final VoidCallback onFinish;
+  SplashScreen({required this.onFinish});
+  @override
+  _SplashScreenState createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Show splash for 1.5 seconds (reduced from 3)
+    Timer(Duration(milliseconds: 1500), widget.onFinish);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.deepPurple.shade700, Colors.purpleAccent.shade100],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.shopping_bag_rounded, size: 80, color: Colors.white),
+              SizedBox(height: 20),
+              Text(
+                'UniEdge',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 42,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                  shadows: [
+                    Shadow(
+                      blurRadius: 8,
+                      color: Colors.black38,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Your One Stop Destination !!',
+                style: TextStyle(color: Colors.white70, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------- AUTH WRAPPER ----------------------------
+// Simplified AuthWrapper. It now takes AppState and manages the in-memory
+// registered user directly.
+class AuthWrapper extends StatefulWidget {
+  final AppState appState;
+  AuthWrapper({required this.appState});
+  @override
+  _AuthWrapperState createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  User? _registeredUser;
+
+  void _navigateToMainApp(User user) {
+    widget.appState.setCurrentUser(user);
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => MainAppScreen(appState: widget.appState),
+      ),
+    );
+  }
+
+  void register(User u) {
+    setState(() {
+      _registeredUser = u;
+    });
+    _navigateToMainApp(u);
+  }
+
+  void login(String emailOrUsername, String password) {
+    if (_registeredUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No account found. Please create an account.')),
+      );
+      return;
+    }
+    if ((emailOrUsername == _registeredUser!.email ||
+            emailOrUsername == _registeredUser!.username) &&
+        password == _registeredUser!.password) {
+      _navigateToMainApp(_registeredUser!);
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Invalid credentials')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // If user is already logged in (e.g., after logout/re-login flow), navigate them directly.
+    if (widget.appState.currentUser != null) {
+      // This case handles the post-logout navigation from ProfilePage if you re-use AuthWrapper
+      // in the pushAndRemoveUntil, but the logic in ProfilePage already navigates correctly.
+      // This is mostly a fallback/initial check.
+      return MainAppScreen(appState: widget.appState);
+    }
+
+    return LoginPage(
+      onLogin: login,
+      onRegisterNavigate: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => RegisterPage(onRegister: register)),
+        );
+      },
+    );
+  }
+}
+
+// ---------------------------- LOGIN PAGE ----------------------------
+class LoginPage extends StatefulWidget {
+  final void Function(String, String) onLogin;
+  final VoidCallback onRegisterNavigate;
+  LoginPage({required this.onLogin, required this.onRegisterNavigate});
+  @override
+  _LoginPageState createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _form = GlobalKey<FormState>();
+  String _id = '';
+  String _password = '';
+  bool _loading = false;
+
+  void submit() {
+    if (!_form.currentState!.validate()) return;
+    _form.currentState!.save();
+    widget.onLogin(_id.trim(), _password);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.purple.shade200, Colors.deepPurple.shade400],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(horizontal: 18, vertical: 30),
+            child: Column(
+              children: [
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Text(
+                    'UniEdge',
+                    style: TextStyle(
+                      fontSize: 28,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 24),
+                Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 10,
+                  child: Padding(
+                    padding: EdgeInsets.all(18),
+                    child: Form(
+                      key: _form,
+                      child: Column(
+                        children: [
+                          Text(
+                            'Welcome Back',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            'Sign in to continue',
+                            style: TextStyle(color: Colors.grey[700]),
+                          ),
+                          SizedBox(height: 16),
+                          TextFormField(
+                            decoration: InputDecoration(
+                              labelText: 'Email or Username',
+                            ),
+                            validator: (v) => (v == null || v.trim().isEmpty)
+                                ? 'Enter email or username'
+                                : null,
+                            onSaved: (v) => _id = v ?? '',
+                          ),
+                          SizedBox(height: 10),
+                          TextFormField(
+                            decoration: InputDecoration(labelText: 'Password'),
+                            obscureText: true,
+                            validator: (v) => (v == null || v.isEmpty)
+                                ? 'Enter password'
+                                : null,
+                            onSaved: (v) => _password = v ?? '',
+                          ),
+                          SizedBox(height: 16),
+                          _loading
+                              ? CircularProgressIndicator()
+                              : ElevatedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _loading = true;
+                                    });
+                                    // small delay to simulate auth
+                                    Future.delayed(
+                                      Duration(milliseconds: 300),
+                                      () {
+                                        setState(() {
+                                          _loading = false;
+                                        });
+                                        submit();
+                                      },
+                                    );
+                                  },
+                                  child: SizedBox(
+                                    width: w,
+                                    child: Center(child: Text('Login')),
+                                  ),
+                                ),
+                          SizedBox(height: 8),
+                          TextButton(
+                            onPressed: widget.onRegisterNavigate,
+                            child: Text(
+                              'Create Account',
+                              style: TextStyle(
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------- REGISTER PAGE ----------------------------
+class RegisterPage extends StatefulWidget {
+  final void Function(User) onRegister;
+  RegisterPage({required this.onRegister});
+  @override
+  _RegisterPageState createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends State<RegisterPage> {
+  final _form = GlobalKey<FormState>();
+  String _name = '';
+  String _username = '';
+  String _email = '';
+  String _phone = '';
+  String _password = '';
+  String _confirm = '';
+
+  String? _validateEmail(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Enter email';
+    if (!v.contains('@')) return 'Email must contain "@"';
+    return null;
+  }
+
+  String? _validateUsername(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Enter username';
+    if (!v.contains('_')) return 'Username must contain "_"';
+    return null;
+  }
+
+  String? _validatePhone(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Enter phone';
+    final digits = v.replaceAll(RegExp(r'\D'), '');
+    if (digits.length != 10) return 'Phone must contain 10 digits';
+    return null;
+  }
+
+  String? _validateName(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Enter name';
+    if (v.trim().length < 5) return 'Name must contain at least 5 characters';
+    return null;
+  }
+
+  String? _validatePassword(String? v) {
+    if (v == null || v.isEmpty) return 'Enter password';
+    bool hasLetter = v.contains(RegExp(r'[A-Za-z]'));
+    bool hasDigit = v.contains(RegExp(r'\d'));
+
+    // Using a multi-line raw string r'''...''' allows the single quote ' to be
+    // included in the character set without prematurely ending the string.
+    bool hasSymbol = v.contains(
+      RegExp(r'''[!@#\$%\^&\*\(\)\-_=\+\[\]\{\};\:\'\",.<>\/?\\|`~]'''),
+    );
+
+    if (!hasLetter || !hasDigit || !hasSymbol)
+      return 'Password must mix letters, numbers and symbols';
+    if (v.length < 6) return 'Password should be at least 6 chars';
+    return null;
+  }
+
+  void submit() {
+    // We already validated in the button, but it's safe to keep.
+    if (!_form.currentState!.validate()) return;
+    _form.currentState!.save();
+    final user = User(
+      name: _name.trim(),
+      username: _username.trim(),
+      email: _email.trim(),
+      phone: _phone.trim(),
+      password: _password,
+    );
+    widget.onRegister(user);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Create Account'), centerTitle: true),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Card(
+          elevation: 6,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Form(
+              key: _form,
+              child: Column(
+                children: [
+                  TextFormField(
+                    decoration: InputDecoration(labelText: 'Full Name'),
+                    validator: _validateName,
+                    onSaved: (v) => _name = v ?? '',
+                  ),
+                  SizedBox(height: 8),
+                  TextFormField(
+                    decoration: InputDecoration(
+                      labelText: 'Username (must contain "_")',
+                    ),
+                    validator: _validateUsername,
+                    onSaved: (v) => _username = v ?? '',
+                  ),
+                  SizedBox(height: 8),
+                  TextFormField(
+                    decoration: InputDecoration(labelText: 'Email'),
+                    validator: _validateEmail,
+                    onSaved: (v) => _email = v ?? '',
+                  ),
+                  SizedBox(height: 8),
+                  TextFormField(
+                    decoration: InputDecoration(labelText: 'Phone (10 digits)'),
+                    keyboardType: TextInputType.phone,
+                    validator: _validatePhone,
+                    onSaved: (v) => _phone = v ?? '',
+                  ),
+                  SizedBox(height: 8),
+                  TextFormField(
+                    decoration: InputDecoration(
+                      labelText: 'Password (mix letters, numbers, symbols)',
+                    ),
+                    obscureText: true,
+                    validator: _validatePassword,
+                    // --- THIS IS THE FIX ---
+                    // Update _password as the user types, so the
+                    // "Confirm Password" validator has the correct value.
+                    onChanged: (v) {
+                      _password = v;
+                    },
+                    onSaved: (v) => _password = v ?? '',
+                  ),
+                  SizedBox(height: 8),
+                  TextFormField(
+                    decoration: InputDecoration(labelText: 'Confirm Password'),
+                    obscureText: true,
+                    validator: (v) {
+                      // Now, _password will have the current value
+                      // from the field above, thanks to onChanged.
+                      if (v == null || v.isEmpty) return 'Confirm password';
+                      if (v != _password) return 'Passwords do not match';
+                      return null;
+                    },
+                    onSaved: (v) => _confirm = v ?? '',
+                  ),
+                  SizedBox(height: 14),
+                  ElevatedButton(
+                    onPressed: () {
+                      // The submit method handles validation and saving
+                      // and correctly builds the User object.
+                      // The password match validation is handled by the last TextFormField's validator.
+                      if (_form.currentState!.validate()) {
+                        submit();
+                      }
+                    },
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Center(child: Text('Create Account')),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------- CART MODEL ----------------------------
+class CartItem {
+  final String id;
+  final String title;
+  final double price;
+  int qty;
+  CartItem({
+    required this.id,
+    required this.title,
+    required this.price,
+    this.qty = 1,
+  });
+}
+
+class CartModel extends ChangeNotifier {
+  final Map<String, CartItem> _items = {};
+  Map<String, CartItem> get items => _items;
+  int get totalCount => _items.values.fold(0, (s, i) => s + i.qty);
+  double get totalPrice =>
+      _items.values.fold(0.0, (s, i) => s + i.price * i.qty);
+
+  void addItem(String id, String title, double price) {
+    if (_items.containsKey(id)) {
+      _items[id]!.qty += 1;
+    } else {
+      _items[id] = CartItem(id: id, title: title, price: price);
+    }
+    notifyListeners();
+  }
+
+  void removeSingle(String id) {
+    if (!_items.containsKey(id)) return;
+    if (_items[id]!.qty > 1) {
+      _items[id]!.qty -= 1;
+    } else {
+      _items.remove(id);
+    }
+    notifyListeners();
+  }
+
+  void clear() {
+    _items.clear();
+    notifyListeners();
+  }
+}
+
+// ---------------------------- MAIN APP SCREEN ----------------------------
+// Simplified to take AppState and use it for all state-dependent properties.
+class MainAppScreen extends StatefulWidget {
+  final AppState appState;
+  MainAppScreen({required this.appState});
+  @override
+  _MainAppScreenState createState() => _MainAppScreenState();
+}
+
+class _MainAppScreenState extends State<MainAppScreen> {
+  int _currentIndex = 0;
+  final TextEditingController _searchController = TextEditingController();
+
+  List<Widget> _pages(User user, CartModel cart, AppState appState) => [
+    HomePage(cart: cart),
+    FoodRootPage(cart: cart),
+    BooksPage(cart: cart),
+    OutfitsRootPage(cart: cart),
+    TravelPage(),
+    ProfilePage(user: user, appState: appState), // Pass AppState to ProfilePage
+  ];
+
+  // Custom logout logic to clean up MainAppScreen
+  void _handleLogout() {
+    widget.appState.setCurrentUser(null);
+    // Navigate back to AuthWrapper
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => AuthWrapper(appState: widget.appState)),
+      (route) => false,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = widget.appState.currentUser!; // Should not be null here
+    final cart = widget.appState.cart;
+    final pages = _pages(user, cart, widget.appState);
+
+    // This screen is now a consumer of AppState for its theme-dependent properties
+    // and CartModel for the cart count in the AppBar.
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(90),
+        child: AppBar(
+          automaticallyImplyLeading: false,
+          title: Row(
+            children: [
+              Text(
+                'UniEdge',
+                style: Theme.of(context).appBarTheme.titleTextStyle,
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 10.0),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      contentPadding: EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
+                      hintText: 'Search products, books, food...',
+                      filled: true,
+                      fillColor:
+                          Theme.of(context).brightness == Brightness.light
+                          ? Colors.white
+                          : Colors.grey[800],
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onSubmitted: (v) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('Search: "$v"')));
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            Padding(
+              padding: EdgeInsets.only(right: 12.0, top: 8),
+              // Use Consumer to react to cart changes
+              child: Consumer<AppState>(
+                builder: (_, state, __) {
+                  // Consume AppState to get cart
+                  final cart = state.cart;
+                  return Stack(
+                    alignment: Alignment.topRight,
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => CartPage(cart: cart),
+                            ),
+                          );
+                        },
+                        icon: Icon(Icons.shopping_cart_outlined),
+                      ),
+                      if (cart.totalCount > 0)
+                        Positioned(
+                          right: 6,
+                          top: 6,
+                          child: Container(
+                            padding: EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              '${cart.totalCount}',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+          bottom: PreferredSize(
+            preferredSize: Size.fromHeight(0),
+            child: SizedBox(height: 8),
+          ),
+        ),
+      ),
+      body: pages[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        type: BottomNavigationBarType.fixed,
+        onTap: (i) => setState(() => _currentIndex = i),
+        items: [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.fastfood), label: 'Food'),
+          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Books'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.checkroom),
+            label: 'Outfits',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.flight), label: 'Travel'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------- HOME PAGE ----------------------------
+class HomePage extends StatelessWidget {
+  final CartModel cart;
+  HomePage({required this.cart});
+  final List<Map<String, dynamic>> highlights = [
+    {'title': 'Campus Meals', 'icon': Icons.restaurant},
+    {'title': 'Books', 'icon': Icons.book},
+    {'title': 'Clothes', 'icon': Icons.checkroom},
+    {'title': 'Travel', 'icon': Icons.directions_bus},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    double crossAxis = (MediaQuery.of(context).size.width / 180)
+        .floorToDouble();
+    if (crossAxis < 2) crossAxis = 2;
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Welcome', style: Theme.of(context).textTheme.headlineSmall),
+          SizedBox(height: 10),
+          SizedBox(
+            height: 110,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: highlights.length,
+              separatorBuilder: (_, __) => SizedBox(width: 12),
+              itemBuilder: (_, idx) {
+                var h = highlights[idx];
+                return Container(
+                  width: 160,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black12, blurRadius: 6),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          child: Icon(h['icon'], color: Colors.white),
+                          backgroundColor: Colors.deepPurple,
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            h['title'] as String,
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          SizedBox(height: 16),
+          Text('Top Picks', style: TextStyle(fontWeight: FontWeight.bold)),
+          SizedBox(height: 10),
+          // Use Consumer for ProductCard grid to automatically update cart count without local setState
+          Consumer<AppState>(
+            builder: (_, appState, __) {
+              final cart = appState.cart;
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount: 6,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxis.toInt(),
+                  mainAxisExtent: 150,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                ),
+                itemBuilder: (_, i) {
+                  final id = 'home_$i';
+                  final title = 'Item ${i + 1}';
+                  final price = 49.0 + i * 20;
+                  // Get a different placeholder image for each card
+                  final imageUrl =
+                      'https://picsum.photos/200/200?image=${i + 10}';
+
+                  return ProductCard(
+                    id: id,
+                    title: title,
+                    price: price,
+                    imageUrl: imageUrl, // Pass the image URL
+                    onAdd: () => cart.addItem(id, title, price),
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------- FOOD FLOW ----------------------------
+class FoodRootPage extends StatelessWidget {
+  final CartModel cart;
+  FoodRootPage({required this.cart});
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(14),
+      child: Column(
+        children: [
+          SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    prefixIcon: Icon(Icons.search),
+                    hintText: 'Search food or grocery',
+                    filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => FoodDeliveryPage(cart: cart),
+                      ),
+                    );
+                  },
+                  child: Text('Food Delivery'),
+                ),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => GroceryPage(cart: cart),
+                      ),
+                    );
+                  },
+                  child: Text('Grocery'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class FoodDeliveryPage extends StatelessWidget {
+  final CartModel cart;
+  FoodDeliveryPage({required this.cart});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Food Delivery')),
+      body: Padding(
+        padding: EdgeInsets.all(12),
+        child: Column(
+          children: [
+            ListTile(
+              leading: Icon(Icons.eco),
+              title: Text('Veg'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => FoodCategoryPage(
+                      cart: cart,
+                      category: 'Veg',
+                      items: [
+                        {
+                          'id': 'veg_tiffin',
+                          'name': 'Tiffin',
+                          'price': 50.0,
+                          'imageUrl':
+                              'https://plus.unsplash.com/premium_photo-1663852297267-827c73e7529e?w=500&auto=format&fit=crop&q=60',
+                        },
+                        {
+                          'id': 'veg_meal',
+                          'name': 'Meals',
+                          'price': 80.0,
+                          'imageUrl':
+                              'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60',
+                        },
+                        {
+                          'id': 'veg_biryani',
+                          'name': 'Biryani',
+                          'price': 120.0,
+                          'imageUrl':
+                              'https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=500&auto=format&fit=crop&q=60',
+                        },
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            Divider(),
+            ListTile(
+              leading: Icon(Icons.set_meal),
+              title: Text('Non - veg'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => FoodCategoryPage(
+                      cart: cart,
+                      category: 'Non-Veg',
+                      items: [
+                        {
+                          'id': 'nv_biryani',
+                          'name': 'Biryani',
+                          'price': 150.0,
+                          'imageUrl':
+                              'https://images.unsplash.com/photo-1631515243349-e0cb75fb8540?w=500&auto=format&fit=crop&q=60',
+                        },
+                        {
+                          'id': 'nv_noodles',
+                          'name': 'Noodles',
+                          'price': 90.0,
+                          'imageUrl':
+                              'https://images.unsplash.com/photo-1552611052-33e04de081de?w=500&auto=format&fit=crop&q=60',
+                        },
+                        {
+                          'id': 'nv_friedrice',
+                          'name': 'Fried Rice',
+                          'price': 100.0,
+                          'imageUrl':
+                              'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=500&auto=format&fit=crop&q=60',
+                        },
+                        {
+                          'id': 'nv_kfc',
+                          'name': 'KFC Style Bucket',
+                          'price': 350.0,
+                          'imageUrl':
+                              'https://images.unsplash.com/photo-1562967914-01efa7e87832?w=500&auto=format&fit=crop&q=60',
+                        },
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class FoodCategoryPage extends StatelessWidget {
+  final CartModel cart;
+  final String category;
+  final List<Map<String, dynamic>> items;
+  FoodCategoryPage({
+    required this.cart,
+    required this.category,
+    required this.items,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('$category Items')),
+      body: ListView.separated(
+        padding: EdgeInsets.all(12),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => Divider(),
+        itemBuilder: (_, i) {
+          final it = items[i];
+          final String id = it['id'] as String;
+          final String name = it['name'] as String;
+          final double price = (it['price'] as num).toDouble();
+          final String imageUrl = it['imageUrl'] as String; // Get the image URL
+
+          return ListTile(
+            leading: CircleAvatar(
+              radius: 25,
+              backgroundImage: NetworkImage(
+                imageUrl,
+              ), // Use NetworkImage for background
+              backgroundColor: Colors.grey[200], // Fallback color
+            ),
+            title: Text(name),
+            subtitle: Text('₹ ${price.toStringAsFixed(0)}'),
+            trailing: ElevatedButton(
+              onPressed: () {
+                cart.addItem(id, name, price);
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('$name added to cart')));
+              },
+              child: Text('Add'),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class GroceryPage extends StatelessWidget {
+  final CartModel cart;
+  GroceryPage({required this.cart});
+  final List<Map<String, dynamic>> groceries = [
+    {
+      'id': 'g1',
+      'name': 'Rice 1kg',
+      'price': 60.0,
+      'imageUrl':
+          'https://images.unsplash.com/photo-1586201375765-c124a05d333d?w=500&auto=format&fit=crop&q=60',
+    },
+    {
+      'id': 'g2',
+      'name': 'Wheat 1kg',
+      'price': 45.0,
+      'imageUrl':
+          'https://images.unsplash.com/photo-1542384114-1-6d-31e18090?w=500&auto=format&fit=crop&q=60',
+    },
+    {
+      'id': 'g3',
+      'name': 'Oil 1L',
+      'price': 150.0,
+      'imageUrl':
+          'https://images.unsplash.com/photo-1620188461705-e7f0b6d2e82e?w=500&auto=format&fit=crop&q=60',
+    },
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Grocery')),
+      body: ListView.separated(
+        padding: EdgeInsets.all(12),
+        itemCount: groceries.length,
+        separatorBuilder: (_, __) => Divider(),
+        itemBuilder: (_, i) {
+          final g = groceries[i];
+          final String id = g['id'] as String;
+          final String name = g['name'] as String;
+          final double price = (g['price'] as num).toDouble();
+          final String imageUrl = g['imageUrl'] as String; // Get the image URL
+
+          return ListTile(
+            leading: CircleAvatar(
+              radius: 25,
+              backgroundImage: NetworkImage(imageUrl), // Use NetworkImage
+              backgroundColor: Colors.grey[200],
+            ),
+            title: Text(name),
+            subtitle: Text('₹ ${price.toStringAsFixed(0)}'),
+            trailing: ElevatedButton(
+              onPressed: () {
+                cart.addItem(id, name, price);
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('$name added to cart')));
+              },
+              child: Text('Add'),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ---------------------------- BOOKS PAGE ----------------------------
+class BooksPage extends StatefulWidget {
+  final CartModel cart;
+  BooksPage({required this.cart});
+
+  @override
+  _BooksPageState createState() => _BooksPageState();
+}
+
+class _BooksPageState extends State<BooksPage> {
+  final List<Map<String, dynamic>> books = [
+    {
+      'id': 'book_1',
+      'title': 'The Flutter Journey',
+      'author': 'Pavan Chennam',
+      'price': 249,
+    },
+    {
+      'id': 'book_2',
+      'title': 'Dart for Beginners',
+      'author': 'John Mathew',
+      'price': 199,
+    },
+    {
+      'id': 'book_3',
+      'title': 'Mastering UI Design',
+      'author': 'Ananya Rao',
+      'price': 299,
+    },
+    {
+      'id': 'book_4',
+      'title': 'Programming Logic Simplified',
+      'author': 'Rahul Dev',
+      'price': 179,
+    },
+    {
+      'id': 'book_5',
+      'title': 'Data Structures with Dart',
+      'author': 'Sneha Reddy',
+      'price': 259,
+    },
+    {
+      'id': 'book_6',
+      'title': 'Mobile App Architecture',
+      'author': 'Vikram Iyer',
+      'price': 309,
+    },
+    {
+      'id': 'book_7',
+      'title': 'Effective Flutter Widgets',
+      'author': 'Meera Kaur',
+      'price': 199,
+    },
+    {
+      'id': 'book_8',
+      'title': 'State Management Essentials',
+      'author': 'Arjun Patel',
+      'price': 279,
+    },
+    {
+      'id': 'book_9',
+      'title': 'Clean Code Practices',
+      'author': 'Riya Sharma',
+      'price': 329,
+    },
+    {
+      'id': 'book_10',
+      'title': 'Firebase Integration Guide',
+      'author': 'Sandeep Kumar',
+      'price': 249,
+    },
+    {
+      'id': 'book_11',
+      'title': 'Networking in Flutter',
+      'author': 'Deepika Nair',
+      'price': 219,
+    },
+    {
+      'id': 'book_12',
+      'title': 'Animations & Transitions',
+      'author': 'Harish Singh',
+      'price': 289,
+    },
+  ];
+
+  String filter = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = books
+        .where(
+          (b) => (b['title'] as String).toLowerCase().contains(
+            filter.toLowerCase(),
+          ),
+        )
+        .toList();
+
+    return Scaffold(
+      body: Padding(
+        padding: EdgeInsets.all(12),
+        child: Column(
+          children: [
+            TextField(
+              decoration: InputDecoration(
+                prefixIcon: Icon(Icons.search),
+                hintText: 'Search books...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (v) => setState(() => filter = v),
+            ),
+            SizedBox(height: 12),
+            Expanded(
+              child: GridView.builder(
+                itemCount: filtered.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: MediaQuery.of(context).size.width > 600
+                      ? 4
+                      : 2,
+                  mainAxisExtent: 180,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                ),
+                itemBuilder: (_, i) {
+                  final b = filtered[i];
+                  final String id = b['id'] as String;
+                  final String title = b['title'] as String;
+                  final String author = b['author'] as String;
+                  final double price = (b['price'] as num).toDouble();
+
+                  // Use different placeholder image for each book
+                  final String imageUrl =
+                      'https://picsum.photos/200/300?image=${i + 30}';
+
+                  return Card(
+                    elevation: 4,
+                    clipBehavior: Clip.antiAlias,
+                    child: Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: Image.network(
+                                imageUrl,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Center(
+                                      child: Icon(
+                                        Icons.menu_book,
+                                        size: 36,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                loadingBuilder: (context, child, progress) =>
+                                    progress == null
+                                    ? child
+                                    : Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            title,
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            author,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Spacer(),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '₹ ${price.toStringAsFixed(0)}',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  widget.cart.addItem(id, title, price);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('$title added to cart'),
+                                    ),
+                                  );
+                                },
+                                child: Text('Add'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------- OUTFITS ----------------------------
+class OutfitsRootPage extends StatelessWidget {
+  final CartModel cart;
+  OutfitsRootPage({required this.cart});
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: 8),
+          Text(
+            'Select Category:',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            OutfitsCategory(cart: cart, gender: 'Men'),
+                      ),
+                    );
+                  },
+                  child: Text('Men'),
+                ),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            OutfitsCategory(cart: cart, gender: 'Female'),
+                      ),
+                    );
+                  },
+                  child: Text('Female'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class OutfitsCategory extends StatelessWidget {
+  final String gender;
+  final CartModel cart;
+  OutfitsCategory({required this.cart, required this.gender});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = gender == 'Men'
+        ? [
+            {
+              'id': 'm_shirt',
+              'name': 'Shirts',
+              'price': 799.0,
+              'imageUrl':
+                  'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=500&auto=format&fit=crop&q=60',
+            },
+            {
+              'id': 'm_pant',
+              'name': 'Pants',
+              'price': 999.0,
+              'imageUrl':
+                  'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=500&auto=format&fit=crop&q=60',
+            },
+            {
+              'id': 'm_hoodie',
+              'name': 'Hoodies',
+              'price': 1299.0,
+              'imageUrl':
+                  'https://images.unsplash.com/photo-1556157382-97eda2d62296?w=500&auto=format&fit=crop&q=60',
+            },
+            {
+              'id': 'm_shoes',
+              'name': 'Shoes',
+              'price': 1999.0,
+              'imageUrl':
+                  'https://images.unsplash.com/photo-1542291026-7eec264c27ab?w=500&auto=format&fit=crop&q=60',
+            },
+          ]
+        : [
+            {
+              'id': 'f_dress',
+              'name': 'Dress',
+              'price': 899.0,
+              'imageUrl':
+                  'https://images.unsplash.com/photo-1571501679680-2a42a0f8b63c?w=500&auto=format&fit=crop&q=60',
+            },
+            {
+              'id': 'f_saree',
+              'name': 'Sarees',
+              'price': 1299.0,
+              'imageUrl':
+                  'https://images.unsplash.com/photo-1603512418552-b7e1f1a08419?w=500&auto=format&fit=crop&q=60',
+            },
+            {
+              'id': 'f_pants',
+              'name': 'Pants',
+              'price': 799.0,
+              'imageUrl':
+                  'https://images.unsplash.com/photo-1551803091-e3d4c38703e3?w=500&auto=format&fit=crop&q=60',
+            },
+            {
+              'id': 'f_beauty',
+              'name': 'Beauty items',
+              'price': 299.0,
+              'imageUrl':
+                  'https://images.unsplash.com/photo-1522338140262-f460289041a4?w=500&auto=format&fit=crop&q=60',
+            },
+          ];
+    return Scaffold(
+      appBar: AppBar(title: Text('$gender Outfits')),
+      body: ListView.separated(
+        padding: EdgeInsets.all(12),
+        itemBuilder: (_, i) {
+          final it = items[i];
+          final String id = it['id'] as String;
+          final String name = it['name'] as String;
+          final double price = (it['price'] as num).toDouble();
+          final String imageUrl = it['imageUrl'] as String; // Get the image URL
+
+          return ListTile(
+            leading: CircleAvatar(
+              radius: 25,
+              backgroundImage: NetworkImage(imageUrl), // Use NetworkImage
+              backgroundColor: Colors.grey[200],
+            ),
+            title: Text(name),
+            subtitle: Text('₹ ${price.toStringAsFixed(0)}'),
+            trailing: ElevatedButton(
+              onPressed: () {
+                cart.addItem(id, name, price);
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('$name added to cart')));
+              },
+              child: Text('Add'),
+            ),
+          );
+        },
+        separatorBuilder: (_, __) => Divider(),
+        itemCount: items.length,
+      ),
+    );
+  }
+}
+
+// ---------------------------- TRAVEL ----------------------------
+class TravelPage extends StatelessWidget {
+  Widget travelForm(BuildContext context, String type) {
+    final _from = TextEditingController();
+    final _to = TextEditingController();
+    final _date = TextEditingController();
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        children: [
+          TextField(
+            controller: _from,
+            decoration: InputDecoration(
+              labelText: 'From',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          SizedBox(height: 12),
+          TextField(
+            controller: _to,
+            decoration: InputDecoration(
+              labelText: 'To',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          SizedBox(height: 12),
+          TextField(
+            controller: _date,
+            decoration: InputDecoration(
+              labelText: 'Date of Travel (YYYY-MM-DD)',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Search $type from ${_from.text} to ${_to.text} on ${_date.text}',
+                  ),
+                ),
+              );
+            },
+            child: SizedBox(
+              width: double.infinity,
+              child: Center(child: Text('Search')),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      child: Column(
+        children: [
+          // AppBar's title and search are in MainAppScreen's AppBar. Only include TabBar here.
+          TabBar(
+            tabs: [
+              Tab(text: 'Bus'),
+              Tab(text: 'Train'),
+              Tab(text: 'Flight'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                travelForm(context, 'Bus'),
+                travelForm(context, 'Train'),
+                travelForm(context, 'Flight'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------- PROFILE ----------------------------
+// ProfilePage is now a Consumer to react to theme changes and handles its own logout.
+class ProfilePage extends StatelessWidget {
+  final User user;
+  final AppState appState;
+  ProfilePage({required this.user, required this.appState});
+
+  void _handleLogout(BuildContext context) {
+    appState.setCurrentUser(null);
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => AuthWrapper(appState: appState)),
+      (r) => false,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // Appbar title is handled by MainAppScreen's main app bar
+      body: Consumer<AppState>(
+        builder: (context, state, _) {
+          return SingleChildScrollView(
+            padding: EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 46,
+                      child: Text(
+                        user.name.substring(0, 1).toUpperCase(),
+                        style: TextStyle(fontSize: 30),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user.name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(user.username),
+                        SizedBox(height: 10),
+                        Text('Email: ${user.email}'),
+                        Text('Phone: ${user.phone}'),
+                      ],
+                    ),
+                  ],
+                ),
+                Divider(height: 30),
+                // Settings Section
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: Icon(Icons.color_lens),
+                        title: Text('Dark Mode'),
+                        trailing: Switch(
+                          value: state.themeMode == ThemeMode.dark,
+                          onChanged: (_) {
+                            state.toggleTheme();
+                          },
+                        ),
+                      ),
+                      Divider(height: 0),
+                      ListTile(
+                        leading: Icon(Icons.logout, color: Colors.red),
+                        title: Text(
+                          'Log Out',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                        onTap: () => _handleLogout(context),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ---------------------------- CART PAGE ----------------------------
+class CartPage extends StatelessWidget {
+  final CartModel cart;
+  CartPage({required this.cart});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Cart')),
+      // Use Consumer here to rebuild only the necessary part when cart changes
+      body: Consumer<AppState>(
+        builder: (_, appState, __) {
+          final items = appState.cart.items.values.toList();
+          return items.isEmpty
+              ? Center(child: Text('Your cart is empty'))
+              : Column(
+                  children: [
+                    Expanded(
+                      child: ListView.separated(
+                        itemCount: items.length,
+                        separatorBuilder: (_, __) => Divider(),
+                        itemBuilder: (_, i) {
+                          final it = items[i];
+                          return ListTile(
+                            title: Text(it.title),
+                            subtitle: Text(
+                              '₹ ${it.price.toStringAsFixed(0)} x ${it.qty}',
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  onPressed: () {
+                                    appState.cart.removeSingle(it.id);
+                                  },
+                                  icon: Icon(Icons.remove),
+                                ),
+                                IconButton(
+                                  onPressed: () {
+                                    appState.cart.addItem(
+                                      it.id,
+                                      it.title,
+                                      it.price,
+                                    );
+                                  },
+                                  icon: Icon(Icons.add),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Total',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                '₹ ${appState.cart.totalPrice.toStringAsFixed(2)}',
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Checkout not implemented in demo',
+                                  ),
+                                ),
+                              );
+                            },
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: Center(child: Text('Checkout')),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+        },
+      ),
+    );
+  }
+}
+
+// ---------------------------- PRODUCT CARD WIDGET ----------------------------
+class ProductCard extends StatelessWidget {
+  final String id;
+  final String title;
+  final double price;
+  final String imageUrl; // Added imageUrl
+  final VoidCallback onAdd;
+
+  ProductCard({
+    required this.id,
+    required this.title,
+    required this.price,
+    required this.imageUrl, // Added imageUrl
+    required this.onAdd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      clipBehavior: Clip.antiAlias, // Clips the image to the card's shape
+      child: Padding(
+        padding: EdgeInsets.all(8),
+        child: Column(
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(
+                  8,
+                ), // Match the original radius
+                child: Image.network(
+                  imageUrl,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  // Show a loading spinner
+                  loadingBuilder: (context, child, progress) => progress == null
+                      ? child
+                      : Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                  // Show a fallback icon if the image fails to load
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Theme.of(context).dividerColor,
+                    child: Center(
+                      child: Icon(
+                        Icons.shopping_bag,
+                        size: 48,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+Text(
+                  '₹ ${price.toStringAsFixed(0)}',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                ElevatedButton(onPressed: onAdd, child: Text('Add')),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------- PROVIDER SIMULATION ----------------------------
+// Custom Provider implementation is kept as per the original file structure
+typedef Create<T> = T Function();
+
+class ChangeNotifierProvider<T extends ChangeNotifier> extends StatefulWidget {
+  final Create<T> create;
+  final Widget child;
+  ChangeNotifierProvider({required this.create, required this.child});
+  @override
+  _ChangeNotifierProviderState<T> createState() =>
+      _ChangeNotifierProviderState<T>();
+
+  static T of<T extends ChangeNotifier>(BuildContext context) {
+    final _InheritedProvider<T>? provider = context
+        .dependOnInheritedWidgetOfExactType<_InheritedProvider<T>>();
+    return provider!.notifier;
+  }
+}
+
+class _ChangeNotifierProviderState<T extends ChangeNotifier>
+    extends State<ChangeNotifierProvider<T>> {
+  late T notifier;
+  @override
+  void initState() {
+    super.initState();
+    notifier = widget.create();
+  }
+
+  @override
+  void dispose() {
+    notifier.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _InheritedProvider<T>(notifier: notifier, child: widget.child);
+  }
+}
+
+class _InheritedProvider<T extends ChangeNotifier>
+    extends InheritedNotifier<T> {
+  final T notifier;
+  _InheritedProvider({required this.notifier, required Widget child})
+    : super(notifier: notifier, child: child);
+}
+
+// Consumer helper
+class Consumer<T extends ChangeNotifier> extends StatelessWidget {
+  final Widget Function(BuildContext, T, Widget?) builder;
+  final Widget? child;
+  Consumer({required this.builder, this.child});
+  @override
+  Widget build(BuildContext context) {
+    final notifier = ChangeNotifierProvider.of<T>(context);
+    return AnimatedBuilder(
+      animation: notifier,
+      builder: (c, _) => builder(c, notifier, child),
+    );
+  }
+}
