@@ -1,13 +1,4 @@
-8A) Add animations to UI elements using Flutter's animation framework.
-AIM: Add animations to UI elements using Flutter's animation framework. 
-DESCRIPTION: 
->This program adds simple animation using the AnimatedContainer widget. 
->The button’s width and color change smoothly when pressed. 
->setState() is used to update the UI values. 
->AnimatedContainer automatically animates changes in its properties. 
->The duration property controls how long the animation lasts. 
->It shows how to make UI elements more interactive and visually appealing. 
-PROGRAM:
+
 import 'package:flutter/material.dart';
 void main() {
 runApp(const MyApp());
