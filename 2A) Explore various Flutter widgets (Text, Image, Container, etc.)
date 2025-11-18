@@ -1,33 +1,4 @@
-Aim :To explore various flutter widgets(texts ,image ,container) 
-Description:
-Flutter provides a wide range of built-in widgets that allow developers to easily create beautiful 
-and flexible UIs. In this experiment, we focus on three of the most commonly used and essential 
-widgets:
- Text Widget
-Used to display a single line or multiple lines of text.
-It supports styling like:
-• Font size, weight, and color
-• Text alignment
-• Font style
-• Decorations
- Image Widget
-Used to display images from:
-• Assets (local project files)
-• Network (Web URL)
-• File system or memory
-It supports properties like:
-• Fit (contain, cover, fill etc.)
-• Width and height customization
-• Border radius & shapes when wrapped with ClipRRect / Container
- Container Widget
-A versatile widget used for:
-• Layout styling
-• Padding and margin
-• Background color
-• Decoration (border, radius)
-Together, these widgets help build UI structure, display media, and present information 
-effectively in Flutter applications.
-Program:
+
 import 'package:flutter/material.dart';
 void main() {
  runApp(const MyWidgetsApp()); }
