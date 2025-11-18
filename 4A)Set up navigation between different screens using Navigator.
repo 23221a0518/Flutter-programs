@@ -1,0 +1,91 @@
+AIM: Set up navigation between different screens using navigator
+DESCRIPTION:
+Navigation is a fundamental part of mobile app development where users move from one 
+screen (page) to another. Flutter provides a built-in Navigator widget that manages a stack￾based navigation system.
+• When a new screen is opened, it is pushed onto the stack.
+• When returning to the previous screen, it is popped from the stack.
+Flutter supports two types of navigation:
+1. Navigator.push() / Navigator.pop() — Direct stack-based navigation
+2. Named Routes — Structured navigation using route names (for better scalability)
+In this experiment, we create multiple screens and navigate between them using buttons. We 
+also explore how screens are added and removed from the navigation stack to maintain the 
+correct flow of the app.
+PROGRAM:
+import 'package:flutter/material.dart';
+void main() {
+ runApp(MyApp());
+}
+class MyApp extends StatelessWidget {
+ @override
+ Widget build(BuildContext context) {
+ return MaterialApp(
+ title: 'Flutter Navigation Demo',
+ theme: ThemeData(primarySwatch: Colors.blue),
+ home: HomeScreen(), // starting screen
+ );
+ }
+}
+// First Screen
+class HomeScreen extends StatelessWidget {
+ @override
+ Widget build(BuildContext context) {
+ return Scaffold(
+ appBar: AppBar(title: Text("Home Screen")),
+ body: Center(
+ child: ElevatedButton(
+ child: Text("Go to Second Screen"),
+ onPressed: () {
+ // Navigate to SecondScreen
+ Navigator.push(
+ context,
+ MaterialPageRoute(builder: (context) => SecondScreen()),
+ );
+ },
+ ),
+ ),
+ );
+ }
+}
+// Second Screen (Row & Column with clear matter)
+class SecondScreen extends StatelessWidget {
+ @override
+ Widget build(BuildContext context) {
+ return Scaffold(
+ appBar: AppBar(title: Text("Second Screen")),
+ body: Padding(
+ padding: const EdgeInsets.all(20.0),
+ child: Column(
+ mainAxisAlignment: MainAxisAlignment.start,
+ children: [
+ Text(
+ "Understanding Column Widget",
+ style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+ ),
+ SizedBox(height: 10),
+ Text(
+ "➡ Column arranges widgets vertically (from top to bottom).",
+ style: TextStyle(fontSize: 16),
+ ),
+ SizedBox(height: 30),
+ Text(
+ "Understanding Row Widget",
+ style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+ ),
+ SizedBox(height: 10),
+ Row(
+ mainAxisAlignment: MainAxisAlignment.center,
+ children: [
+ Icon(Icons.arrow_forward, color: Colors.blue, size: 30),
+ SizedBox(width: 10),
+ Text(
+ "Row arranges widgets horizontally (side by side).",
+ style: TextStyle(fontSize: 16),
+ ),
+ ],
+ ),
+ ],
+ ),
+ ),
+ );
+ }
+}
