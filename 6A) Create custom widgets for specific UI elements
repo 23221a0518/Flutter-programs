@@ -1,11 +1,4 @@
-6A) Create custom widgets for specific UI elements.
-AIM: To Create custom widgets for specific UI elements.
-DESCRIPTION:
-In this project, custom widgets were created to build specific parts of the user interface. These 
-widgets help make the code more organized, reusable, and easier to maintain.
-For example, custom buttons, text fields, and cards were designed to match the app’s theme 
-and provide a consistent look across all screens.
-PROGRAM:
+
 import 'package:flutter/material.dart';
 // Custom Button Widget
 class CustomButton extends StatelessWidget {
