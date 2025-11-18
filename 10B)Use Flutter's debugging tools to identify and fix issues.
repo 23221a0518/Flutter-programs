@@ -1,13 +1,4 @@
-AIM:To use Flutter's debugging tools to identify and fix issues. 
-DESCRIPTION: 
->Debugging in Flutter helps developers find and fix errors in their apps. 
->Tools like print(), debugPrint(), and the Flutter DevTools console are used for debugging. 
->Developers can check variable values, UI issues, and logic errors using these tools. 
->When an error occurs, Flutter shows error messages in the debug console to locate the 
-problem. 
->After identifying the issue, developers modify the code and re-run the app to confirm the fix. 
->Debugging ensures the app works smoothly and correctly without unexpected behavior. 
-PROGRAM:
+
 import 'package:flutter/material.dart';
 void main() {
 runApp(const MyApp());
