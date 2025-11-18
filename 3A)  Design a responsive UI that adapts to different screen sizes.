@@ -1,12 +1,4 @@
-AIM: To design a responsive ui that adapts to different screen sizes
-DESCRIPTION:
-A responsive UI (User Interface) is a design approach in which the layout, elements, and 
-content automatically adjust to fit different screen sizes and orientations — such as mobile 
-phones, tablets, laptops, and desktops.
-Instead of designing separate apps for each device, a responsive UI uses flexible layouts, 
-scalable text, and adaptive widgets so that the same app looks good and works properly 
-everywhere.
-PROGRAM:
+
 import 'package:flutter/material.dart';
 // Entry point of the app
 void main() {
