@@ -1,9 +1,4 @@
-AIM:To write unit tests for UI components 
-DESCRIPTION: 
-• Use Flutter’s flutter_test package to write test cases.
-• Test widget behavior using WidgetTester.
-• Verify that UI renders and functions correctly.
-PROGRAM:
+
 import 'package:flutter/material.dart';
 void main() {
 runApp(const MyApp());
