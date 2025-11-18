@@ -1,14 +1,4 @@
-8B) Experiment with different types of animations (fade, slide, etc.). 
-AIM:To experiment with different types of animations (fade, slide, etc.). 
-DESCRIPTION: 
->This program demonstrates two types of animations – Fade and Slide. 
->AnimatedOpacity is used to create a fade-in/fade-out effect. 
->AnimatedContainer with margin change is used for sliding animation. 
->The setState() method updates the widget’s visibility and position. 
->Duration controls how long each animation takes.>The program shows how to make UI 
-elements move and fade smoothly. 
->Such animations make the app more dynamic and visually attractive. 
-PROGRAM:
+
 import 'package:flutter/material.dart';
 void main() {
 runApp(const AnimationExampleApp());
