@@ -1,0 +1,93 @@
+5A) Learn about stateful and stateless widgets.
+AIM: To Learn about stateful and stateless widgets.
+DESCRIPTION:
+Stateful and Stateless Widgets
+• Stateless Widget:
+Does not change — it stays the same every time it’s built.
+Example: Text, Icon.
+• Stateful Widget:
+Can change when something happens (like a button press).
+Example: Checkbox, Slider, Counter app.
+PROGRAM:
+import 'package:flutter/material.dart';
+void main() {
+ runApp(MyApp());
+}
+// Root widget — Stateless
+class MyApp extends StatelessWidget {
+ @override
+ Widget build(BuildContext context) {
+ return MaterialApp(
+ title: 'Stateful vs Stateless Demo',
+ theme: ThemeData(
+ primarySwatch: Colors.blue,
+ ),
+ home: Scaffold(
+ appBar: AppBar(
+ title: Text('Stateful vs Stateless Widgets'),
+ ),
+ body: Center(
+ child: Column(
+ mainAxisAlignment: MainAxisAlignment.center,
+ children: [
+ MyStatelessWidget(),
+ SizedBox(height: 30),
+ MyStatefulWidget(),
+ ], ),),), );}}
+// ----------------------------
+// Stateless Widget
+// ----------------------------
+class MyStatelessWidget extends StatelessWidget {
+ @override
+ Widget build(BuildContext context) {
+ print('Stateless Widget built'); // Logs rebuilds
+ return Column(
+ children: [
+ Text(
+ 'I am a Stateless Widget!',
+ style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+ ),
+ Text(
+ 'I do not change once built.',
+ style: TextStyle(color: Colors.grey[700]),
+ ),
+ ],
+ );
+ }
+}
+// ----------------------------
+// Stateful Widget
+// ----------------------------
+class MyStatefulWidget extends StatefulWidget {
+ @override
+ _MyStatefulWidgetState createState() => _MyStatefulWidgetState();
+}
+class _MyStatefulWidgetState extends State<MyStatefulWidget> {
+ int _counter = 0;
+ void _incrementCounter() {
+ setState(() {
+ _counter++;
+ });
+ }
+ @override
+ Widget build(BuildContext context) {
+ print('Stateful Widget built'); // Logs rebuilds
+ return Column(
+ children: [
+ Text(
+ 'I am a Stateful Widget!',
+ style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+ ),
+ Text(
+ 'Counter: $_counter',
+ style: TextStyle(fontSize: 18, color: Colors.blueAccent),
+ ),
+ SizedBox(height: 10),
+ ElevatedButton(
+ onPressed: _incrementCounter,
+ child: Text('Increment Counter'),
+ ),
+ ],
+ );
+ }
+}
