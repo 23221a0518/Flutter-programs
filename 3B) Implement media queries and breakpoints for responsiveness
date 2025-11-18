@@ -1,15 +1,4 @@
-AIM: To implement media queries and breakpoint for responsiveness 
-DESCRIPTION:
-Responsive Web Design (RWD) is a design approach that allows web pages to adjust smoothly 
-to different screen sizes and devices. CSS media queries are used to apply different styling rules 
-based on screen characteristics such as width, height, resolution, and orientation.
-In this experiment, breakpoints are defined at specific screen widths (e.g., 320px for mobile, 
-768px for tablets, and 1024px for desktops). When a user accesses the webpage on different 
-devices, the layout and styling will automatically change to ensure a good user experience.
-By using media queries, we can modify font sizes, layout structure (grid or flex), images, and 
-other design elements to ensure the webpage remains readable, well-structured, and visually 
-appealing on all devices.
-PROGRAM:
+
 import 'package:flutter/material.dart';
 void main() {
  runApp(const ResponsiveApp());
