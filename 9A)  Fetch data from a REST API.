@@ -1,11 +1,4 @@
 
-AIM:To fetch data from a REST API. 
-DESCRIPTION: 
- Learn how to make HTTP requests using the http package.
- Fetch data from an external REST API using GET requests.
- Parse JSON responses into Flutter models or objects.
- Handle errors like failed requests or invalid responses.
-PROGRAM:
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
